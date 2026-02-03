@@ -1,66 +1,61 @@
 package com.ojt.project.onlineshop.Config;
 
-import com.ojt.project.onlineshop.Filter.JwtFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private JwtFilter jwtFilter;
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                // 1. Tắt CSRF (Rất quan trọng với API RESTful stateless)
+                                .csrf(AbstractHttpConfigurer::disable)
 
-    @Autowired
-    private CorsFilter corsFilter;
+                                // 2. Kích hoạt cấu hình CORS từ bean bên dưới
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-    @Autowired
-    private CustomAuthenticationEntryPoint authenticationEntryPoint;
+                                // 3. Cấu hình phân quyền (Authorize)
+                                .authorizeHttpRequests(auth -> auth
+                                                // Cho phép truy cập tự do vào các API auth và public
+                                                .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**",
+                                                                "/v3/api-docs/**")
+                                                .permitAll()
+                                                // Các request khác phải đăng nhập
+                                                .anyRequest().authenticated())
+                // ... (Giữ nguyên các cấu hình filter JWT khác của em nếu có)
+                ;
 
-    @Autowired
-    private CustomAccessDeniedHandler accessDeniedHandler;
+                return http.build();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        // Bean cấu hình CORS chi tiết
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml")
-                        .permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
+                // QUAN TRỌNG: Cho phép đúng domain Frontend của em
+                // Không được có dấu gạch chéo / ở cuối string
+                configuration.setAllowedOrigins(
+                                List.of("https://onlineshop-i0m4.onrender.com", "http://localhost:5173"));
 
-                        .requestMatchers("/api/auth/register").permitAll()
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-auth-token"));
+                configuration.setAllowCredentials(true); // Cho phép gửi cookie/credential nếu cần
 
-                        .requestMatchers("/api/public/**").permitAll()
-
-                        .requestMatchers("/api/admin/**").permitAll()
-
-                        .anyRequest().authenticated())
-
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
-                .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 }
