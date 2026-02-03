@@ -24,8 +24,7 @@ public class JwtUtil {
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        // Với version 0.11.5, cần key ít nhất 256 bits (32 bytes)
-        // Nếu secret ngắn hơn, sẽ pad hoặc hash
+
         if (keyBytes.length < 32) {
             // Tạo key 32 bytes từ secret
             byte[] paddedKey = new byte[32];

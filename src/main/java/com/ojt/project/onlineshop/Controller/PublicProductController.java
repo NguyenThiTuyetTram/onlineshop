@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/products") // Hoặc /api/public/products tuỳ cấu hình của bạn
+@RequestMapping("/api/public/products")
 public class PublicProductController {
 
     @Autowired
