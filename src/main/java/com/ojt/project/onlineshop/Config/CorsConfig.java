@@ -22,7 +22,9 @@ public class CorsConfig {
                 "http://localhost:3000",
                 "http://localhost:8080",
                 "http://localhost:5173",
-                "https://onlineshop-i0m4.onrender.com"));
+                "https://onlineshop-i0m4.onrender.com",
+                "https://onlineshop-fe.vercel.app"
+        ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
